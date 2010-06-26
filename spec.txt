@@ -1,0 +1,29 @@
+_utility
+
+PERMISSIONS
+
+reset - can reset variables
+irc - move channels etc.
+repl - use of repl
+grant - can grant privileges
+
+pm - some commands are only available through private messaging
+
+COMMANDS
+
+!set (variable, msg)- sets a variable (can unlock a variable if source had reset permission)
+!lock (variable, msg)- sets a variable and locks it to other users (reset permission allows setting)
+!get (variable)
+!grant (user,privilege) - requires grant
+!revoke (user,privilege) - requires grant
+!join (channel) - requires irc
+!leave (channel) - requires irc
+!repl cmd - requires repl
+!help
+!variables - requires pm
+
+?... - grabs info on a command
+
+FUTURE
+!respond url msg - attempts to respond to a url (twitter, stackoverflow, google groups) with user node[.]js[.]bot, requires voice
+!translate [goal|source-goal] msg
