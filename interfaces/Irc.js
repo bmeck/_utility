@@ -5,6 +5,8 @@ var irc = require('irc')
 //Produces an IRCClient instance
 ////IRCClient(options)
 ////  options = {nick:string,server:string,channels:string[]}
+
+///IRCClient has a closure['IRCClient'] that matches node-irc's Client()
 module.exports = function(system,interfaces,systemClosures) {
   interfaces['IRCClient'] = {
     hooks: {
