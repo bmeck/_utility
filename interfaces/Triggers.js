@@ -1,6 +1,6 @@
 var ArgumentHelper = require('../utils/Arguments').ArgumentHelper
   , sys = require('sys')
-
+  , postHook = require('../utils/Hooking').postHook
 //Triggers
 //
 //Gives IRCClient an instance closure['Triggers']
@@ -11,13 +11,12 @@ var ArgumentHelper = require('../utils/Arguments').ArgumentHelper
 
 module.exports = function(triggerChar) {
     return function (system,interfaces,systemClosure) {
-      var oldHook = interfaces['IRCClient'].hooks.preInit
       //Make sure we have persistance
       if(!interfaces['Persistance']) {
         var persistance = require('./Persistance').apply(this,arguments)
       }
-      interfaces['IRCClient'].hooks.preInit=function(obj,closures,args){
-        oldHook.apply(this,arguments)
+      postHook(interfaces,'IRCClient',function(obj,closures,args){
+        sys.puts('HOOKING IN TRIGGERS')
         closures["Triggers.store"] = {}
         closures["Triggers"] = {
           register: function(command,callback) {
@@ -40,7 +39,6 @@ module.exports = function(triggerChar) {
           }
         }
       })
-    }
-  }
-}
+  })
+}}
   

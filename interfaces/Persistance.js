@@ -1,7 +1,6 @@
-var sys=require('sys')
 //TODO Make this an interface
 
-//Persistance - In memory datastore compliant API 
+//Persistance - In memory datastore compliant API
 //
 //Produces IRCClient instance closure ['Persistance']
 ////closure['Persistance']
@@ -12,18 +11,19 @@ var sys=require('sys')
 ////  .remove(key,callback(error,bool success))
 ////  .retrieve(key,callback(error,value))
 ////  .update(key,value,callback(error,value))
+var postHook = require('../utils/Hooking').postHook
+  , sys = require('sys')
+
 module.exports = function (system,interfaces,systemClosure) {
-  var oldHook = interfaces['IRCClient'].hooks.preInit
-  interfaces['IRCClient'] = {
-    hooks: {
-      preInit: function(obj,closures,args) {
-        oldHook.apply(this,arguments)
-        closures['Persistance.store'] = {}
-        closures['Persistance'] = {
-          select: function(databaseName,callback) {
+  interfaces['Persistance'] = {
+    properties: {
+      select: function(object,closures,args) {
+        return {value:function(databaseName,callback) {
+        sys.puts(1)
             //grab old or just make a new one
-            callback(null, closures['Persistance.store'][databaseName] ||
-            (closures['Persistance.store'][databaseName] = {
+            //Since we are using a memory store no need for more itnerfaces, just use a closure
+            var db=closures['Persistance.store'][databaseName]
+            if(!db) db = closures['Persistance.store'][databaseName] = {
               create: function(key,value,callback) {
                 var result = (closures['Persistance.store'][databaseName][key] = value)
                 if(callback) callback(false,result)
@@ -41,10 +41,20 @@ module.exports = function (system,interfaces,systemClosure) {
                 var result = (closures['Persistance.store'][databaseName][key] = value)
                 if(callback) callback(false,result)
               }
-            }))
-          }
+            }
+            callback(null, db)
+          }}
         }
+    }
+    , hooks: {
+      preInit: function(object,closures) {
+        closures['Persistance.store'] = {}
       }
     }
   }
+  postHook(interfaces,'IRCClient',
+    function(obj,closures,args) {
+      closures['Persistance'] = system.create('Persistance')
+    }
+  )
 }

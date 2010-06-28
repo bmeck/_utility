@@ -12,7 +12,6 @@ module.exports = function(system,interfaces,systemClosures) {
     hooks: {
       preInit: function(obj,closures,args) {
         var options = args[0]
-        sys.puts(sys.inspect(options))
         var client = closures['IRCClient']=new irc.Client(options.server, options.nick, {
           channels: options.channels || false,
         })
