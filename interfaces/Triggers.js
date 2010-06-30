@@ -16,7 +16,7 @@ module.exports = function(triggerChar) {
         var persistance = require('./Persistance').apply(this,arguments)
       }
       postHook(interfaces,'IRCClient',function(obj,closures,args){
-        sys.puts('HOOKING IN TRIGGERS')
+        //sys.puts('HOOKING IN TRIGGERS')
         closures["Triggers.store"] = {}
         closures["Triggers"] = {
           register: function(command,callback) {
@@ -41,4 +41,4 @@ module.exports = function(triggerChar) {
       })
   })
 }}
-  
+

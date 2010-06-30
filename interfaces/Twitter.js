@@ -73,7 +73,12 @@ module.exports = function(oauth_key,oauth_secret){return function(system,interfa
     twitter.login()
     sys.puts("Login now")
     triggers.register("tweet",function(source,destination,privacy,input){
-      twitter.tweet(input+" --"+source)
+      var permissions = closures['Permissions']
+      if(!permissions) twitter.tweet(input+" --"+source)
+      else permissions.test(source,'voice',function(err,hasPermission) {
+      	if(err) {sys.puts(err); return;}
+      	if(hasPermission) twitter.tweet(input+" --"+source)
+      })
     })
   })
 }}

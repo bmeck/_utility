@@ -13,42 +13,80 @@
 ////  .update(key,value,callback(error,value))
 var postHook = require('../utils/Hooking').postHook
   , sys = require('sys')
+  , fs = require('fs')
+  , path = require('path')
 
 module.exports = function (system,interfaces,systemClosure) {
   interfaces['Persistance'] = {
     properties: {
       select: function(object,closures,args) {
         return {value:function(databaseName,callback) {
-        sys.puts(1)
+        	var db_file = path.join(process.cwd(),'dbs',databaseName,databaseName+".json")
             //grab old or just make a new one
             //Since we are using a memory store no need for more itnerfaces, just use a closure
-            var db=closures['Persistance.store'][databaseName]
-            if(!db) db = closures['Persistance.store'][databaseName] = {
-              create: function(key,value,callback) {
-                var result = (closures['Persistance.store'][databaseName][key] = value)
-                if(callback) callback(false,result)
+            var db = closures['Persistance.interface'][databaseName]
+            if(!db) {
+            closures['Persistance.store'][databaseName] = {}
+            db = closures['Persistance.interface'][databaseName] = {
+                    create: function(key,value,callback) {
+                      var result = (closures['Persistance.store'][databaseName][key] = value)
+                      fs.writeFile(
+                        db_file
+                        , JSON.stringify(closures['Persistance.store'][databaseName])
+                        , function(err){sys.puts(err)}
+                      )
+                      if(callback) callback(false,result)
+                    }
+                    , remove: function(key,callback) {
+                      var result = (delete closures['Persistance.store'][databaseName][key])
+                      fs.writeFile(db_file,JSON.stringify(closures['Persistance.store'][databaseName])
+                        , function(err){sys.puts(err)})
+                      if(callback) callback(false,result)
+                    }
+                    , retrieve: function(key,callback) {
+                      var result = (closures['Persistance.store'][databaseName][key])
+                      if(callback) callback(false,result)
+                    }
+                    //same as create since its just a flat memory store
+                    , update: function(key,value,callback) {
+                      var result = (closures['Persistance.store'][databaseName][key] = value)
+                      //sys.puts("update::"+key,sys.inspect(value))
+                      fs.writeFile(db_file,JSON.stringify(closures['Persistance.store'][databaseName])
+                        , function(err){sys.puts(err)})
+                      if(callback) callback(false,result)
+                    }
+                    , keys: function(callback) {
+					  if(callback) callback(false,Object.keys(closures['Persistance.store'][databaseName]));
+                    }
+                  }
+              fs.readFile(db_file,function(err,data) {
+              	if (data) {
+              	  data = Function("return "+data)()
+              	  for(var key in data) {
+					db.update(key,data[key])
+              	  }
+              	  sys.puts(sys.inspect(data))
+                  callback(null, db)
+              	  return
+              	}
+				fs.writeFile(
+				  db_file
+				  , JSON.stringify(closures['Persistance.store'][databaseName])
+				  , function(err,db){callback(err, db)}
+				)
               }
-              , remove: function(key,callback) {
-                var result = (delete closures['Persistance.store'][databaseName][key])
-                if(callback) callback(false,result)
-              }
-              , retrieve: function(key,callback) {
-                var result = (closures['Persistance.store'][databaseName][key])
-                if(callback) callback(false,result)
-              }
-              //same as create since its just a flat memory store
-              , update: function(key,value,callback) {
-                var result = (closures['Persistance.store'][databaseName][key] = value)
-                if(callback) callback(false,result)
-              }
+            )
+            return
             }
             callback(null, db)
-          }}
+            }
+          }
         }
     }
     , hooks: {
       preInit: function(object,closures) {
         closures['Persistance.store'] = {}
+        closures['Persistance.interface'] = {}
       }
     }
   }

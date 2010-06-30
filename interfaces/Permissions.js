@@ -14,6 +14,7 @@ var ArgumentHelper = require('../utils/Arguments').ArgumentHelper
 ////  !grant user privilege
 ////  !revoke user privilege
 var postHook = require('../utils/Hooking').postHook
+var errorCheck = function(err) { if(err) {sys.puts('err',err); return true;} return false }
 module.exports = function (system,interfaces,systemClosure) {
   //Make sure we have persistance
   if(!interfaces['Persistance']) {
@@ -24,44 +25,64 @@ module.exports = function (system,interfaces,systemClosure) {
       , persistanceStore = persistance.select('Permissions',function(err,db){
         var _permissions = null // used so we can refrence it in a sec
       , _permissions = closures['Permissions'] = {
-        'grant': function(admin,user,right) {
+        'grant': function(admin,user,right,callback) {
+          var end = function(err){if(callback) callback(err)}
           right = right.toLowerCase()
-          var adminPermissions = persistanceStore[admin]
           //give the rights if admin has grant, only give out root if admin has root
-          if(adminPermissions && _permissions.test(admin,'grant')
-          && (right !== 'root' || _permissions.test(admin,'root'))) {
-            var userPermissions = permissions[user]
-            userPermissions[right] = true;
-            persistanceStore.update(user,userPermissions)
-          }
+          var required = right=='root'?'root':'grant'
+          _permissions.test(admin,required,function(err,hasPermission) {
+            if(errorCheck(err)) return end(err)
+            if(hasPermission) {
+              db.retrieve(user,function(err,userPermissions){
+                if(errorCheck(err)) return end(err)
+                if(typeof userPermissions === 'undefined') {
+                  var rights = {}
+                  rights[right] = true
+                  db.create(user,rights,function(err){errorCheck(err);return end(err)})
+				  return
+                }
+ 				  userPermissions[right] = true;
+				  db.update(user,userPermissions,function(err){errorCheck(err);return end(err)})
+              })
+            }
+          })
         },
-        'revoke': function(admin,user,right) {
+        'revoke': function(admin,user,right,callback) {
+          var end = function(err){if(callback) callback(err)}
           right = right.toLowerCase()
-          var adminPermissions = persistanceStore[admin]
           //give the rights if admin has grant, only give out root if admin has root
-          if(adminPermissions && _permissions.test(admin,'grant')
-          && (right !== 'root' || _permissions.test(admin,'root'))) {
-            var userPermissions = permissions[user]
-            delete userPermissions[right];
-            persistanceStore.update(user,userPermissions)
-          }
+          var required = right=='root'?'root':'grant'
+          _permissions.test(admin,required,function(err,hasPermission) {
+            if(errorCheck(err)) return end(err)
+            if(hasPermission) {
+              db.retrieve(user,function(err,userPermissions){
+                if(errorCheck(err)) return end(err)
+                if(typeof userPermissions === 'undefined') {
+				  return
+                }
+ 				  delete userPermissions[right];
+				  db.update(user,userPermissions,function(err){errorCheck(err);return end(err)})
+              })
+            }
+          })
         },
-        'test': function(user,right) {
+        'test': function(user,right,callback) {
           right = right.toLowerCase()
-          var userPermissions = persistanceStore[user]
-          return right in userPermissions
+          db.retrieve(user,function(err,document){
+			  callback(err, document && (right in document || 'root' in document))
+          })
         }
       }})
     var triggers = closures['Triggers'];
     if(triggers) {
       triggers.register('grant',function(source,destination,privacy,input){
-        var args = ArgumentHelper.grab(2,input) //grab first 2 and trail
+        var args = ArgumentHelper(2,input) //grab first 2 and trail
         if(args) {
           closures['Permissions'].grant(source,args[0],args[1])
         }
       })
       triggers.register('revoke',function(source,destination,privacy,input){
-        var args = ArgumentHelper.grab(2,input) //grab first 2 and trail
+        var args = ArgumentHelper(2,input) //grab first 2 and trail
         if(args) {
           closures['Permissions'].revoke(source,args[0],args[1])
         }

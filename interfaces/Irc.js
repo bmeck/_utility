@@ -9,8 +9,7 @@ var irc = require('irc')
 ///IRCClient has a closure['IRCClient'] that matches node-irc's Client()
 module.exports = function(system,interfaces,systemClosures) {
   interfaces['IRCClient'] = {
-    hooks: {
-      preInit: function(obj,closures,args) {
+      constructor: function(closures,args) {
         var options = args[0]
         var client = closures['IRCClient']=new irc.Client(options.server, options.nick, {
           channels: options.channels || false,
@@ -36,7 +35,8 @@ module.exports = function(system,interfaces,systemClosures) {
         client.addListener('kick', function(channel, who, by, reason) {
             sys.puts(who + ' was kicked from ' + channel + ' by ' + by + ': ' + reason);
         });
+        return client;
       }
-    }
+
   }
 }

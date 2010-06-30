@@ -19,7 +19,7 @@ exports.postHook = function (interfaces,interfaceToHook,callback) {
     , hooks = interfaceDescriptor.hooks
   if (hooks) {
     var oldhook = hooks.preInit
-    sys.puts(sys.inspect(interfaces[interfaceToHook]),interfaceToHook,!!oldhook)
+    //sys.puts(sys.inspect(interfaces[interfaceToHook]),interfaceToHook,!!oldhook)
     if (oldhook) {
       hooks.preInit = function() {
         oldhook.apply(this,arguments)
@@ -31,5 +31,5 @@ exports.postHook = function (interfaces,interfaceToHook,callback) {
   else {
     interfaceDescriptor.hooks = {}
   }
-  interfaces[interfaceToHook].hooks.preInit = callback  
+  interfaces[interfaceToHook].hooks.preInit = callback
 }
