@@ -8,6 +8,7 @@
 var OAuth= require('oauth/oauth').OAuth
   , postHook = require('../utils/Hooking').postHook
   , sys = require('sys')
+  , ArgumentHelper = require('../utils/Arguments').ArgumentHelper
 
 module.exports = function(oauth_key,oauth_secret){return function(system,interfaces,systemClosures) {
   interfaces['Twitter'] = {
@@ -66,19 +67,4 @@ module.exports = function(oauth_key,oauth_secret){return function(system,interfa
       }
     }
   }
-  postHook(interfaces,'IRCClient',function(obj,closures){
-    var triggers = closures['Triggers'];
-    var twitter = closures['Twitter'] = system.create("Twitter",oauth_key,oauth_secret)
-    sys.puts("Logging into twitter")
-    twitter.login()
-    sys.puts("Login now")
-    triggers.register("tweet",function(source,destination,privacy,input){
-      var permissions = closures['Permissions']
-      if(!permissions) twitter.tweet(input+" --"+source)
-      else permissions.test(source,'voice',function(err,hasPermission) {
-      	if(err) {sys.puts(err); return;}
-      	if(hasPermission) twitter.tweet(input+" --"+source)
-      })
-    })
-  })
 }}

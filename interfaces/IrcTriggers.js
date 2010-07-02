@@ -7,6 +7,7 @@ module.exports = function(system,interfaces,systemClosures) {
     var triggers = closures['Triggers'];
     triggers.register("join",function(source,destination,privacy,input){
       input = input.trim()
+      if(input.charAt(0)!=='#') input='#'+input
       sys.puts('"'+input+'"')
       var permissions = closures['Permissions']
       if(!permissions) obj.join(input)
@@ -17,6 +18,7 @@ module.exports = function(system,interfaces,systemClosures) {
     })
     triggers.register("leave",function(source,destination,privacy,input){
       input = input.trim()
+      if(input.charAt(0)!=='#') input='#'+input
       var permissions = closures['Permissions']
       if(!permissions) obj.part(input)
       else permissions.test(source,'irc',function(err,hasPermission) {

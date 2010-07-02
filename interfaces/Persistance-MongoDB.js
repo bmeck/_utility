@@ -1,63 +1,103 @@
-//NON_FUNCTIONAL
+//TODO Make this an interface
 
-var mongodb = require("mongodb-native");
+//Persistance - In memory datastore compliant API
+//
+//Produces IRCClient instance closure ['Persistance']
+////closure['Persistance']
+////  .select(dbname,callback(err,db)) - grabs a database
+////
+////db
+////  .create(key,value,callback(error,value))
+////  .remove(key,callback(error,bool success))
+////  .retrieve(key,callback(error,value))
+////  .update(key,value,callback(error,value))
+var postHook = require('../utils/Hooking').postHook
+  , sys = require('sys')
+  , fs = require('fs')
+  , path = require('path')
+  , mongo = require('mongodb')
 
-function (dbname,dbaddress,dbport) {
-var client = new Db(dbname, new Server(dbaddress || "127.0.0.1", dbport || 27017, {}));
-client.open(function(p_client) {
-      client.createCollection('test_insert', function(err, collection) {
-        client.collection('test_insert', function(err, collection) {
-          for(var i = 1; i < 1000; i++) {
-            collection.insert({c:1}, function(err, docs) {});
-          }
-           collection.insert({a:2}, function(err, docs) {
-             collection.insert({a:3}, function(err, docs) {
-               collection.count(function(err, count) {
-               test.assertEquals(1001, count);
-               // Locate all the entries using find
-               collection.find(function(err, cursor) {
-                  cursor.toArray(function(err, results) {
-                    test.assertEquals(1001, results.length);
-                    test.assertTrue(results[0] != null);
-                    // Let's close the db
-                    client.close();
-                   });
-                 });
-               });
-             });
-           });
-         });
-     });
-});
-}
+module.exports = function(host,port) {
+host = host || (process.env['MONGO_NODE_DRIVER_HOST'] != null ? process.env['MONGO_NODE_DRIVER_HOST'] : 'localhost');
+port = port || (process.env['MONGO_NODE_DRIVER_PORT'] != null ? process.env['MONGO_NODE_DRIVER_PORT'] : mongo.Connection.DEFAULT_PORT);
 
-module.exports = function (system,interfaces,systemClosure) {
+return function (system,interfaces,systemClosure) {
   interfaces['Persistance'] = {
-    hooks: {
-      preInit: function(obj,closures,args) {
-        closures['Persistance.store'] = {}
-        closures['Persistance'] = {
-          select: function(databaseName) {
+    properties: {
+      select: function(object,closures,args) {
+        return {value:function(databaseName,callback) {
+        	var db_file = path.join(process.cwd(),'dbs',databaseName,databaseName+".json")
             //grab old or just make a new one
-            return closures['Persistance.store'][databaseName] ||
-            {
-              create: function(key,value) {
-                return closures['Persistance.store'][databaseName][key] = value
+            //Since we are using a memory store no need for more itnerfaces, just use a closure
+            var db = closures['Persistance.interface'][databaseName]
+            if(!db) {
+            closures['Persistance.store'][databaseName] = {}
+            db = closures['Persistance.interface'][databaseName] = {
+                    create: function(key,value,callback) {
+                      var result = (closures['Persistance.store'][databaseName][key] = value)
+                      fs.writeFile(
+                        db_file
+                        , JSON.stringify(closures['Persistance.store'][databaseName])
+                        , function(err){sys.puts(err)}
+                      )
+                      if(callback) callback(false,result)
+                    }
+                    , remove: function(key,callback) {
+                      var result = (delete closures['Persistance.store'][databaseName][key])
+                      fs.writeFile(db_file,JSON.stringify(closures['Persistance.store'][databaseName])
+                        , function(err){sys.puts(err)})
+                      if(callback) callback(false,result)
+                    }
+                    , retrieve: function(key,callback) {
+                      var result = (closures['Persistance.store'][databaseName][key])
+                      if(callback) callback(false,result)
+                    }
+                    //same as create since its just a flat memory store
+                    , update: function(key,value,callback) {
+                      var result = (closures['Persistance.store'][databaseName][key] = value)
+                      //sys.puts("update::"+key,sys.inspect(value))
+                      fs.writeFile(db_file,JSON.stringify(closures['Persistance.store'][databaseName])
+                        , function(err){sys.puts(err)})
+                      if(callback) callback(false,result)
+                    }
+                    , keys: function(callback) {
+					  if(callback) callback(false,Object.keys(closures['Persistance.store'][databaseName]));
+                    }
+                  }
+              fs.readFile(db_file,function(err,data) {
+              	if (data) {
+              	  data = Function("return "+data)()
+              	  for(var key in data) {
+					db.update(key,data[key])
+              	  }
+              	  sys.puts(sys.inspect(data))
+                  callback(null, db)
+              	  return
+              	}
+				fs.writeFile(
+				  db_file
+				  , JSON.stringify(closures['Persistance.store'][databaseName])
+				  , function(err,db){callback(err, db)}
+				)
               }
-              , remove: function(key) {
-                return delete closures['Persistance.store'][databaseName][key]
-              }
-              , retrieve: function(key) {
-                return closures['Persistance.store'][databaseName][key]
-              }
-              //same as create since its just a flat memory store
-              , update: function(key,value) {
-                return closures['Persistance.store'][databaseName][key] = value
-              }
+            )
+            return
+            }
+            callback(null, db)
             }
           }
         }
+    }
+    , hooks: {
+      preInit: function(object,closures) {
+        closures['Persistance.store'] = {}
+        closures['Persistance.interface'] = {}
       }
     }
   }
+  postHook(interfaces,'IRCClient',
+    function(obj,closures,args) {
+      closures['Persistance'] = system.create('Persistance')
+    }
+  )
 }

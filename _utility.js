@@ -6,6 +6,8 @@ var Irc = require('./interfaces/Irc')
   , Permissions = require('./interfaces/Permissions')
   , VariableStore = require('./interfaces/VariableStore')
   , Twitter = require('./interfaces/Twitter')
+  , TwitterTriggers = require('./interfaces/TwitterTriggers')
+  , Translate = require('./interfaces/Translate')
   //Make your own settings
   , settings = require('./settings')
 
@@ -13,8 +15,11 @@ var Bot = System([
 	Irc
 	, Permissions
 	, Triggers('!')
+	, Translate
 	, IrcTriggers
 	, Twitter(settings.oauth_key,settings.oauth_key_secret)
+	, TwitterTriggers
+	, VariableStore
 ])
 
 var client = Bot.create('IRCClient',{
