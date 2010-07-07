@@ -10,7 +10,7 @@ var OAuth= require('oauth/oauth').OAuth
   , sys = require('sys')
   , ArgumentHelper = require('../utils/Arguments').ArgumentHelper
 
-module.exports = function(oauth_key,oauth_secret){return function(system,interfaces,systemClosures) {
+module.exports = function(system,interfaces,systemClosures) {
   interfaces['Twitter'] = {
     properties: {
       login: function(obj,closures){return {value:function() {
@@ -67,4 +67,4 @@ module.exports = function(oauth_key,oauth_secret){return function(system,interfa
       }
     }
   }
-}}
+}
