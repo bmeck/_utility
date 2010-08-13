@@ -18,7 +18,6 @@ var Bot = System([
 	, Translate
 	, IrcTriggers
 	, Twitter
-	, TwitterTriggers("h5vpDPS2riT1vn4imgPDQw", "7ikegRCnIblG3PG4rMWpT8nk5gQ1MaR2DAZTt9GeDM")
 	//, VariableStore
 ])
 
